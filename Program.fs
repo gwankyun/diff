@@ -67,6 +67,8 @@ module Diff =
     let diff path target newPath oldPath =
         let newState, _ = read newPath
         let oldState, _ = read oldPath
+        // printfn "newState: %A" newState
+        // printfn "oldState: %A" oldState
         let creation, deletion, modify =
             Map.diffWith (fun f (b1, d1) (b2, d2) ->
                 match b1, b2 with
@@ -95,8 +97,10 @@ module Diff =
         creationFile |> fileAction
 
         // 修改的部分
+        // printfn "modify: %A" modify
         let modifyDir, modifyFile =
             modify |> Map.partition (fun _ ((b1, _), _) -> b1)
+        // printfn "modifyFile: %A" modifyFile
         modifyDir |> dirAction
         modifyFile |> fileAction
 
@@ -122,6 +126,11 @@ module Diff =
         result
     
     let test =
+        // let a = Map.ofList [(1, 2); (2, 3); (3, 4)]
+        // let b = Map.ofList [(1, 2); (2, 3); (3, 5)]
+        // let i = Map.diffWith (fun k v1 v2 -> v1 <> v2) a b
+        // printfn "i: %A" i
+        
         let modify path =
             File.writeAllText <| Path.join path "2.txt" <| "" // 新增文件
             File.writeAllText <| Path.join3 path "5" "6.txt" <| "" // 新增文件

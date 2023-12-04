@@ -30,8 +30,10 @@ module Map =
         let create1 = sub table1 table2
         let create2 = sub table2 table1
         let diffPath =
-            intersect table1 table1
+            intersect table1 table2
+            // |> (fun x -> printfn "%A" x;x)
             |> Map.filter (fun k (v1, v2) -> f k v1 v2)
+        // printfn "diffPath: %A" diffPath
         create1, create2, diffPath
 
 module Common =
