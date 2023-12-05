@@ -69,7 +69,9 @@ module Diff =
         let oldState, _ = read oldPath
         // printfn "newState: %A" newState
         // printfn "oldState: %A" oldState
-        let creation, deletion, modify =
+        let creation = Map.sub newState oldState
+        let deletion = Map.sub oldState newState
+        let modification =
             Map.diffWith (fun f (b1, d1) (b2, d2) ->
                 match b1, b2 with
                 | true, true -> false
@@ -99,7 +101,7 @@ module Diff =
         // 修改的部分
         // printfn "modify: %A" modify
         let modifyDir, modifyFile =
-            modify |> Map.partition (fun _ ((b1, _), _) -> b1)
+            modification |> Map.partition (fun _ ((b1, _), _) -> b1)
         // printfn "modifyFile: %A" modifyFile
         modifyDir |> dirAction
         modifyFile |> fileAction
@@ -112,7 +114,9 @@ module Diff =
     let compare path1 path2 =
         let m1 = toFileMap path1
         let m2 = toFileMap path2
-        let c1, c2, diffPar =
+        let c1 = Map.sub m1 m2
+        let c2 = Map.sub m2 m1
+        let diffPar =
             Map.diffWith (fun k (b1, d1) (b2, d2) ->
                 match b1, b2 with
                 | true, true -> false
@@ -170,6 +174,11 @@ module Diff =
         let diffPath = joinTest "diff"
         clearDirectory diffPath
         diff currentPath diffPath state2 state1
+
+        let zipPath = Path.join <| Directory.parent diffPath <| "patch.zip"
+        File.deleteIfexists zipPath
+        Directory.compress diffPath zipPath
+
         // 原目錄合併差異包
         merge dataPath diffPath
         // 對比兩個目錄
@@ -203,7 +212,11 @@ let main argv =
                 let newPath = argv[3]
                 let oldPath = argv[4]
                 Diff.diff path dest newPath oldPath
+
+                // Directory.compress dest ("E:/patch.zip")
+
                 0
+                
             else
                 1
         | "merge" -> // 合併

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <PublishAot>false</PublishAot>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="common.fs" />
