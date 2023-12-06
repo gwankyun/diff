@@ -1,5 +1,6 @@
 ﻿open System.IO
 open System.Text.Json
+open System.Text.Json.Serialization
 open Common
 
 module C = Common
@@ -7,6 +8,24 @@ module C = Common
 open Common.Common
 
 type DateTime = System.DateTime
+
+// [JsonSerializerContext.a JsonSerializableAttribute(typeof(DateTime))]
+// type MyContext() =
+//     inherit JsonSerializerContext()
+
+// Operators.typeof
+[<JsonSerializable(typeof<DateTime>)>]
+type MyContext(x) =
+    inherit JsonSerializerContext(x)
+
+    override this.GeneratedSerializerOptions: JsonSerializerOptions =
+        base.GeneratedSerializerOptions
+    override this.GetTypeInfo(``type``: System.Type): Metadata.JsonTypeInfo =
+        base.GetTypeInfo(``type``)
+
+// MyContext.
+
+// JsonSerializer.Deserialize("", jsonTypeInfo<)
 
 module Diff =
     let toFileMap path =
@@ -128,13 +147,13 @@ module Diff =
             printfn "%A" c2
             printfn "%A" diffPar
         result
-    
+
     let test =
         // let a = Map.ofList [(1, 2); (2, 3); (3, 4)]
         // let b = Map.ofList [(1, 2); (2, 3); (3, 5)]
         // let i = Map.diffWith (fun k v1 v2 -> v1 <> v2) a b
         // printfn "i: %A" i
-        
+
         let modify path =
             File.writeAllText <| Path.join path "2.txt" <| "" // 新增文件
             File.writeAllText <| Path.join3 path "5" "6.txt" <| "" // 新增文件
@@ -182,7 +201,7 @@ module Diff =
         // 原目錄合併差異包
         merge dataPath diffPath
         // 對比兩個目錄
-        printfn "compare: %A" <| compare dataPath currentPath
+        // printfn "compare: %A" <| compare dataPath currentPath
 
 [<EntryPoint>]
 let main argv =
@@ -193,8 +212,19 @@ let main argv =
     let command = argv[0]
 
     let result =
+        let message = Map [
+            ("current", "current path dest");
+            ("diff", "diff path dest newPath oldPath");
+            ("merge", "merge path package");
+            ("test", "test");
+            ]
+        let checkHelp argv messge =
+            match argv |> Array.tryFind ((=) "help") with
+            | Some _ -> printfn "dotnet run %s" messge
+            | None -> ()
         match command with
         | "current" ->
+            checkHelp argv <| message[command]
             if argv.Length >= 3 then
                 let path = argv[1]
                 let dest = argv[2]
@@ -205,21 +235,19 @@ let main argv =
                     2
             else
                 1
-        | "diff" ->
+        | "diff" as c ->
+            checkHelp argv <| message[command]
             if argv.Length >= 5 then
                 let path = argv[1]
                 let dest = argv[2]
                 let newPath = argv[3]
                 let oldPath = argv[4]
                 Diff.diff path dest newPath oldPath
-
-                // Directory.compress dest ("E:/patch.zip")
-
                 0
-                
             else
                 1
         | "merge" -> // 合併
+            checkHelp argv <| message[command]
             if argv.Length >= 3 then
                 let path = argv[1]
                 let package = argv[2]
@@ -228,8 +256,13 @@ let main argv =
             else
                 1
         | "test" -> // 測試
+            checkHelp argv <| message[command]
             Diff.test
-            1
+            0
+        | "help" ->
+            for i in message do
+                printfn "dotnet run %s" <| i.Value
+            0
         | _ -> 3
     printfn "%A" result
     0
