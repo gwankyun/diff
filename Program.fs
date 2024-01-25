@@ -36,7 +36,7 @@ module Diff =
                 Path.relativePath path x, (b, Path.lastWriteTime x))
             |> Map.ofSeq
 
-    let current path dest =
+    let currentData path =
         // 遍歷目錄
         let state =
             path |> toFileMap
@@ -49,25 +49,44 @@ module Diff =
                 | true, false -> false
                 | false, false -> w1 > w2) state
 
-        // 轉成JSON
-        let stateJson = Json.serialize state
         let _, (_, t) = result
-        let lastWriteTimeJson = Json.serialize t
+        state, t
+
+    let wrtieFile dest file json =
+        File.writeAllText <| Path.join dest file <| (Json.serialize <| json)
+
+    let current path dest =
+        let stateJson, lastWriteTimeJson = currentData path
 
         // 寫入文件
-        File.writeAllText <| Path.join dest "state.txt" <| stateJson
-        File.writeAllText <| Path.join dest "lastWriteTime.txt" <| lastWriteTimeJson
+        wrtieFile dest "state.txt" stateJson
+        wrtieFile dest "lastWriteTime.txt" lastWriteTimeJson
 
-        // printfn "%A" itemList
-        // printfn "%A" result
+    let currentMany pathList dest =
+        let state = List.map currentData pathList
 
-    type StateType = Map<string, bool * DateTime>
-    let read path =
+        let stateJson = List.map fst state
+        let lastWriteTimeJson = List.map snd state
+
+        // 寫入文件
+        wrtieFile dest "state.txt" stateJson
+        wrtieFile dest "lastWriteTime.txt" lastWriteTimeJson
+
+    let readJson path =
         let joinPath = Path.join path
         let toJson = joinPath >> File.readAllText
         let stateJson = "state.txt" |> toJson
         let lastWriteJson = "lastWriteTime.txt" |> toJson
+        stateJson, lastWriteJson
+
+    type StateType = Map<string, bool * DateTime>
+    let read path =
+        let stateJson, lastWriteJson = readJson path
         Json.deserialize<StateType> stateJson, Json.deserialize<DateTime> lastWriteJson
+
+    let readMany path =
+        let stateJson, lastWriteJson = readJson path
+        Json.deserialize<StateType list> stateJson, Json.deserialize<DateTime list> lastWriteJson
 
     let merge path package =
         Directory.copy (Path.join package "data") path
@@ -148,6 +167,37 @@ module Diff =
             printfn "%A" diffPar
         result
 
+    let sync path1 path2 =
+        let fileList1 = toFileMap path1
+        let fileList2 = toFileMap path2
+        let u = Map.union fileList1 fileList2
+        for i in u do
+            let key = i.Key
+            let value = i.Value
+            let p1 = Path.join path1 key
+            let p2 = Path.join path2 key
+            match value with
+            | Some (false, _), Some (false, _) -> // 有新有舊，修改
+                File.copy p1 p2
+            | Some (false, _), Some (true, _) ->
+                Directory.deleteIfExists p2 true
+                File.copy p1 p2
+            | Some (true, _), Some (false, _) ->
+                File.deleteIfexists p2
+                Directory.create p2
+            | Some (true, _), Some (true, _) ->
+                ()
+            | Some (false, _), None -> // 有新冇舊，新增
+                File.copy p1 p2
+            | Some (true, _), None ->
+                Directory.create p2
+            | None, Some (false, _) -> // 冇新有舊，刪除
+                File.deleteIfexists p2
+            | None, Some (true, _) ->
+                Directory.deleteIfExists p2 true
+            | _ -> ()
+        ()
+
     let test =
         // let a = Map.ofList [(1, 2); (2, 3); (3, 4)]
         // let b = Map.ofList [(1, 2); (2, 3); (3, 5)]
@@ -201,7 +251,7 @@ module Diff =
         // 原目錄合併差異包
         merge dataPath diffPath
         // 對比兩個目錄
-        // printfn "compare: %A" <| compare dataPath currentPath
+        printfn "compare: %A" <| compare dataPath currentPath
 
 [<EntryPoint>]
 let main argv =
@@ -263,6 +313,16 @@ let main argv =
             for i in message do
                 printfn "dotnet run %s" <| i.Value
             0
-        | _ -> 3
+        | "sync" ->
+            if argv.Length >= 3 then
+                let newPath = argv[1]
+                let oldPath = argv[2]
+                if Directory.exists newPath |> not then
+                    failwith (newPath  + "not exists")
+                Diff.sync newPath oldPath
+            0
+        | _ ->
+            printfn "Unknowed commander"
+            3
     printfn "%A" result
     0

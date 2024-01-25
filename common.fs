@@ -16,7 +16,7 @@ module Map =
                 maxKey otherMap
         result
 
-    /// <summary>`table1`有`table2`无的鍵</summary>
+    /// <summary>`table1`有`table2`無的鍵</summary>
     let sub table1 table2 =
         Map.filter (fun k _ -> table2 |> Map.containsKey k |> not) table1
 
