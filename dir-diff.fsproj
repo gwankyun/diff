@@ -3,9 +3,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <PublishAot>false</PublishAot>
+    <!-- <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault> -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="common.fs" />
+    <Compile Include="diff.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>
