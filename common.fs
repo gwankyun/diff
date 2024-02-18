@@ -103,6 +103,9 @@ module Common =
         let countChar c s =
             s |> String.filter ((=) c) |> String.length
 
+        let startsWith (value: string) (str: string) =
+            str.StartsWith(value)
+
     module File =
         let exists path =
             File.Exists(path)

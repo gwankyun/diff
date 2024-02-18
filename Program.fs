@@ -71,7 +71,9 @@ let main argv =
             let dirs = Directory.GetDirectories(history)
             for i in dirs do
                 let info = new DirectoryInfo(i)
-                printfn "path: %A writeTime: %A" <| Path.relativePath history i <| info.LastWriteTime
+                let relativePath = Path.relativePath history i
+                if relativePath |> String.startsWith ".diff" |> not then
+                    printfn "path: %A writeTime: %A" relativePath <| info.LastWriteTime
             0
         | "diff" as c ->
             checkHelp argv <| message[command]
@@ -80,6 +82,17 @@ let main argv =
                 let dest = argv[2]
                 let newPath = argv[3]
                 let oldPath = argv[4]
+                Diff.diff path dest newPath oldPath
+                0
+            else if argv.Length >= 3 then
+                let history = Path.join Directory.current ".history"
+                let path = Directory.current
+                let newPath = argv[1]
+                let oldPath = argv[2]
+                let dest = Path.join3 history ".diff" <| newPath + "-" + oldPath
+                let newPath = Path.join history newPath
+                let oldPath = Path.join history oldPath
+                Directory.create dest
                 Diff.diff path dest newPath oldPath
                 0
             else
@@ -106,7 +119,7 @@ let main argv =
                 let newPath = argv[1]
                 let oldPath = argv[2]
                 if Directory.exists newPath |> not then
-                    failwith (newPath  + "not exists")
+                    failwith <| newPath  + "not exists"
                 Diff.sync newPath oldPath
             0
         | _ ->
