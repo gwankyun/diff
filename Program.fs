@@ -104,6 +104,11 @@ let main argv =
                 let package = argv[2]
                 Diff.merge path package
                 0
+            else if argv.Length >= 2 then
+                let path = Directory.current
+                let package = argv[1]
+                Diff.merge path package
+                0
             else
                 1
         | "test" -> // 測試
