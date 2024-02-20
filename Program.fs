@@ -13,6 +13,9 @@ type DateTime = System.DateTime
 // type MyContext() =
 //     inherit JsonSerializerContext()
 
+module Str = String
+module Dir = Directory
+
 // Operators.typeof
 [<JsonSerializable(typeof<DateTime>)>]
 type MyContext(x) =
@@ -36,6 +39,8 @@ let main argv =
     let command = argv[0]
     printfn "command: %s" command
 
+    let history = Path.join Dir.current ".history"
+
     let result =
         let message = Map [
             ("current", "current path dest");
@@ -53,26 +58,38 @@ let main argv =
             if argv.Length >= 3 then
                 let path = argv[1]
                 let dest = argv[2]
-                if Directory.exists path && Directory.exists dest then
+                if Dir.exists path && Dir.exists dest then
                     Diff.current Diff.defaultPred path dest
                     0
                 else
                     2
-            else if Path.join Directory.current ".history" |> Directory.exists then
-                let path = Directory.current
-                let dest = Path.join3 Directory.current ".history" argv[1]
-                Directory.CreateDirectory dest |> ignore
-                Diff.current (fun p _ _ -> p.StartsWith(".history") |> not) path dest
+            else if history |> Dir.exists then
+                let path = Dir.current
+                let dest = Path.join history argv[1]
+                Dir.create dest
+                let whiteList = Path.join3 history ".config" "white_list.txt"
+
+                let content =
+                    match whiteList |> File.exists with
+                    | true ->
+                        Some <| File.readAllLines whiteList
+                    | false -> None
+                Diff.current (fun p _ _ ->
+                    let h = p |> Str.startsWith ".history" |> not
+                    match content with
+                    | Some c ->
+                        Array.exists (p |> Str.startsWith) c && h
+                    | None -> h) path dest
                 0
             else
                 1
         | "list" ->
-            let history = Path.join Directory.current ".history"
-            let dirs = Directory.GetDirectories(history)
+            let history = Path.join Dir.current ".history"
+            let dirs = Directory.GetDirectories history
             for i in dirs do
                 let info = new DirectoryInfo(i)
                 let relativePath = Path.relativePath history i
-                if relativePath |> String.startsWith ".diff" |> not then
+                if relativePath |> Str.startsWith ".diff" |> not then
                     printfn "path: %A writeTime: %A" relativePath <| info.LastWriteTime
             0
         | "diff" as c ->
@@ -85,14 +102,14 @@ let main argv =
                 Diff.diff path dest newPath oldPath
                 0
             else if argv.Length >= 3 then
-                let history = Path.join Directory.current ".history"
-                let path = Directory.current
+                let history = Path.join Dir.current ".history"
+                let path = Dir.current
                 let newPath = argv[1]
                 let oldPath = argv[2]
                 let dest = Path.join3 history ".diff" <| newPath + "-" + oldPath
                 let newPath = Path.join history newPath
                 let oldPath = Path.join history oldPath
-                Directory.create dest
+                Dir.create dest
                 Diff.diff path dest newPath oldPath
                 0
             else
@@ -105,7 +122,7 @@ let main argv =
                 Diff.merge path package
                 0
             else if argv.Length >= 2 then
-                let path = Directory.current
+                let path = Dir.current
                 let package = argv[1]
                 Diff.merge path package
                 0
@@ -123,7 +140,7 @@ let main argv =
             if argv.Length >= 3 then
                 let newPath = argv[1]
                 let oldPath = argv[2]
-                if Directory.exists newPath |> not then
+                if Dir.exists newPath |> not then
                     failwith <| newPath  + "not exists"
                 Diff.sync newPath oldPath
             0

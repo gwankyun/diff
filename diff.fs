@@ -2,13 +2,14 @@
 open Common.Common
 
 type DateTime = System.DateTime
+module Dir = Directory
 
 module Diff =
     // 相對路徑
     let toFileMap path =
         getFileSystemEntries path
             |> Array.toSeq
-            |> Seq.map (fun x -> x, Directory.exists x)
+            |> Seq.map (fun x -> x, Dir.exists x)
             |> Seq.map (fun (x, b) ->
                 Path.relativePath path x, (b, Path.lastWriteTime x))
             |> Map.ofSeq
@@ -50,7 +51,7 @@ module Diff =
     let defaultPred a b c = true
 
     let currentMany pathList dest =
-        let state = List.map (currentData defaultPred) pathList
+        let state = List.map <| currentData defaultPred <| pathList
 
         let stateJson = List.map fst state
         let lastWriteTimeJson = List.map snd state
@@ -76,7 +77,7 @@ module Diff =
         Json.deserialize<StateType list> stateJson, Json.deserialize<DateTime list> lastWriteJson
 
     let merge path package =
-        Directory.copy (Path.join package "data") path
+        Dir.copy <| Path.join package "data" <| path
         // 刪除文件
         let deletionJson = File.readAllText <| Path.join package "deletion.json"
         let deletion = Json.deserialize<StateType> deletionJson
@@ -85,7 +86,7 @@ module Diff =
         |> Seq.iter (fun (k, (b, _)) ->
             let file = Path.join path k
             if b then
-                Directory.deleteIfExists file true
+                Dir.deleteIfExists file true
             else
                 File.deleteIfexists file)
 
@@ -108,12 +109,12 @@ module Diff =
 
         let dirAction m =
             Map.iter (fun k _ ->
-                Directory.create <| joinTarget k) m
+                Dir.create <| joinTarget k) m
 
         let fileAction m =
             Map.iter (fun k _ ->
                 let dest = joinTarget k
-                Directory.createFor dest
+                Dir.createFor dest
                 File.copy <| Path.join path k <| dest) m
 
         // 新增目錄文件要複製
@@ -167,21 +168,21 @@ module Diff =
             | Some (false, _), Some (false, _) -> // 有新有舊，修改
                 File.copy p1 p2
             | Some (false, _), Some (true, _) ->
-                Directory.deleteIfExists p2 true
+                Dir.deleteIfExists p2 true
                 File.copy p1 p2
             | Some (true, _), Some (false, _) ->
                 File.deleteIfexists p2
-                Directory.create p2
+                Dir.create p2
             | Some (true, _), Some (true, _) ->
                 ()
             | Some (false, _), None -> // 有新冇舊，新增
                 File.copy p1 p2
             | Some (true, _), None ->
-                Directory.create p2
+                Dir.create p2
             | None, Some (false, _) -> // 冇新有舊，刪除
                 File.deleteIfexists p2
             | None, Some (true, _) ->
-                Directory.deleteIfExists p2 true
+                Dir.deleteIfExists p2 true
             | _ -> ()
         ()
 
@@ -195,28 +196,28 @@ module Diff =
         let modify path =
             File.writeAllText <| Path.join path "2.txt" <| "" // 新增文件
             File.writeAllText <| Path.join3 path "5" "6.txt" <| "" // 新增文件
-            Directory.create <| Path.join path "3" // 新目錄
-            Directory.create <| Path.join3 path "3" "7" // 新目錄
+            Dir.create <| Path.join path "3" // 新目錄
+            Dir.create <| Path.join3 path "3" "7" // 新目錄
             File.deleteIfexists <| Path.join path "3.txt" // 刪除文件
             File.deleteIfexists <| Path.join3 path "5" "51.txt" // 刪除文件
             File.writeAllText <| Path.join path "1.txt" <| "" // 修改文件
             File.writeAllText <| Path.join4 path "5" "52" "521.txt" <| "" // 修改文件
-            Directory.deleteIfExists <| Path.join path "4" <| true // 刪除目錄
+            Dir.deleteIfExists <| Path.join path "4" <| true // 刪除目錄
 
         let clearDirectory dir =
-            Directory.deleteIfExists dir true
-            Directory.create dir
+            Dir.deleteIfExists dir true
+            Dir.create dir
         // 複製一個文件夾
-        printfn "%A" Directory.current
-        let currentDir = Directory.current
+        printfn "%A" Dir.current
+        let currentDir = Dir.current
         let test = Path.join currentDir "test"
         let joinTest = Path.join test
         let currentPath = joinTest "current"
         let dataPath = joinTest "data"
         clearDirectory dataPath
-        Directory.copy <| joinTest "base" <| dataPath
+        Dir.copy <| joinTest "base" <| dataPath
         clearDirectory currentPath
-        Directory.copy dataPath currentPath
+        Dir.copy dataPath currentPath
         // 記錄狀態A
         let state1 = joinTest "state1"
         clearDirectory state1
@@ -232,9 +233,9 @@ module Diff =
         clearDirectory diffPath
         diff currentPath diffPath state2 state1
 
-        let zipPath = Path.join <| Directory.parent diffPath <| "patch.zip"
+        let zipPath = Path.join <| Dir.parent diffPath <| "patch.zip"
         File.deleteIfexists zipPath
-        Directory.compress diffPath zipPath
+        Dir.compress diffPath zipPath
 
         // 原目錄合併差異包
         merge dataPath diffPath

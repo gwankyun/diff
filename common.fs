@@ -1,4 +1,4 @@
-namespace Common
+﻿namespace Common
 open System.IO
 open System.Text.Json
 open System.IO.Compression
@@ -87,10 +87,10 @@ module Common =
 
     module Json =
         let serialize value =
-            JsonSerializer.Serialize(value)
+            JsonSerializer.Serialize value
 
         let deserialize<'a> (value: string) =
-            JsonSerializer.Deserialize<'a>(value)
+            JsonSerializer.Deserialize<'a> value
 
     let tryGetDirectory path =
         let dir = (new FileInfo(path)).Directory
@@ -104,14 +104,14 @@ module Common =
             s |> String.filter ((=) c) |> String.length
 
         let startsWith (value: string) (str: string) =
-            str.StartsWith(value)
+            str.StartsWith value
 
     module File =
         let exists path =
-            File.Exists(path)
+            File.Exists path
 
         let delete path =
-            File.Delete(path)
+            File.Delete path
 
         let deleteIfexists path =
             if exists path then
@@ -119,7 +119,7 @@ module Common =
 
         let copy src dest =
             if src |> exists |> not then
-                invalidArg (nameof src) (sprintf "%s not exists" src)
+                invalidArg <| nameof src <| sprintf "%s not exists" src
             File.Copy(src, dest, true)
 
         /// <summary>寫入文件</summary>
@@ -127,11 +127,14 @@ module Common =
             File.WriteAllText(path, contents)
 
         let readAllText path =
-            File.ReadAllText(path)
+            File.ReadAllText path
+
+        let readAllLines path =
+            File.ReadAllLines path
 
     module Directory =
         let exists path =
-            Directory.Exists(path)
+            Directory.Exists path
 
         let delete path recursive =
             Directory.Delete(path, recursive)
@@ -144,7 +147,7 @@ module Common =
             (Path.directory path).Create()
 
         let create path =
-            Directory.CreateDirectory(path) |> ignore
+            Directory.CreateDirectory path |> ignore
 
         let copy src dest =
             let data = getFileSystemEntries src
@@ -165,7 +168,7 @@ module Common =
                 let newPath = Path.join dest rela
                 match exists x with
                 | true ->
-                    if not (exists newPath) then
+                    if exists newPath |> not then
                         createFor newPath
                         create newPath
                 | false ->
