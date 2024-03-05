@@ -11,30 +11,10 @@ type DateTime = System.DateTime
 
 open Argu
 
-// [JsonSerializerContext.a JsonSerializableAttribute(typeof(DateTime))]
-// type MyContext() =
-//     inherit JsonSerializerContext()
-
 module Str = String
 module Dir = Directory
 
-
-// Operators.typeof
-[<JsonSerializable(typeof<DateTime>)>]
-type MyContext(x) =
-    inherit JsonSerializerContext(x)
-
-    override this.GeneratedSerializerOptions: JsonSerializerOptions =
-        base.GeneratedSerializerOptions
-    override this.GetTypeInfo(``type``: System.Type): Metadata.JsonTypeInfo =
-        base.GetTypeInfo(``type``)
-
-// MyContext.
-
-// JsonSerializer.Deserialize("", jsonTypeInfo<)
-
 type CliArguments =
-    // | Path of path: string
     | [<CliPrefix(CliPrefix.None)>] Add of name: string
     | [<CliPrefix(CliPrefix.None)>] Diff of newPath: string * oldPath: string
     | [<CliPrefix(CliPrefix.None)>] Merge of package: string
@@ -47,9 +27,9 @@ type CliArguments =
         member this.Usage =
             match this with
             | Add name ->
-                "Add"
-            | Diff _ -> "Diff"
-            | Merge _ -> "Merge"
+                "添加當前狀態"
+            | Diff _ -> "比較兩個狀態，生成補丁包"
+            | Merge _ -> "合併補丁包"
             | Path _ -> "Path"
             | List -> "List"
             | Sync _ -> "Sync"
@@ -65,24 +45,18 @@ let main argv =
 
     let all = result.GetAllResults()
 
-    // if argv.Length < 1 then
-    //     exit 1
-
-    // let command = argv[0]
-    // printfn "command: %s" command
-
     let history = Path.join Dir.current ".history"
 
-    let add = result.TryGetResult Add
-    let pathPair = result.TryGetResult Diff
-    let package = result.TryGetResult Merge
-    let list = result.TryGetResult List
-    let sync = result.TryGetResult Sync
-    let test = result.TryGetResult Test
+    let addParam = result.TryGetResult Add
+    let diffParam = result.TryGetResult Diff
+    let mergeParam = result.TryGetResult Merge
+    let listParam = result.TryGetResult List
+    let syncParam = result.TryGetResult Sync
+    let testParam = result.TryGetResult Test
 
-    if add.IsSome then
+    if addParam.IsSome then
         let path = Dir.current
-        let dest = Path.join history add.Value
+        let dest = Path.join history addParam.Value
         Dir.create dest
         let whiteList = Path.join3 history ".config" "white_list.txt"
 
@@ -99,10 +73,10 @@ let main argv =
             | None -> h) path dest
         exit 0
 
-    if pathPair.IsSome then
+    if diffParam.IsSome then
         let history = Path.join Dir.current ".history"
         let path = Dir.current
-        let newPath, oldPath = pathPair.Value
+        let newPath, oldPath = diffParam.Value
         let dest = Path.join3 history ".diff" <| newPath + "-" + oldPath
         let newPath = Path.join history newPath
         let oldPath = Path.join history oldPath
@@ -110,12 +84,12 @@ let main argv =
         Diff.diff path dest newPath oldPath
         exit 0
 
-    if package.IsSome then
+    if mergeParam.IsSome then
         let path = Dir.current
-        Diff.merge path package.Value
+        Diff.merge path mergeParam.Value
         exit 0
 
-    if list.IsSome then
+    if listParam.IsSome then
         let history = Path.join Dir.current ".history"
         let dirs = Directory.GetDirectories history
         for i in dirs do
@@ -125,14 +99,14 @@ let main argv =
                 printfn "path: %A writeTime: %A" relativePath <| info.LastWriteTime
         exit 0
 
-    if sync.IsSome then
-        let newPath, oldPath = sync.Value
+    if syncParam.IsSome then
+        let newPath, oldPath = syncParam.Value
         if Dir.exists newPath |> not then
             failwith <| newPath  + "not exists"
         Diff.sync newPath oldPath
         exit 0
 
-    if test.IsSome then
+    if testParam.IsSome then
         Diff.test
         exit 0
 
