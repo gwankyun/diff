@@ -31,7 +31,7 @@ type CliArguments =
             | Diff _ -> "比較兩個狀態，生成補丁包"
             | Merge _ -> "合併補丁包"
             | Path _ -> "Path"
-            | List -> "List"
+            | List -> "列出狀態"
             | Sync _ -> "Sync"
             | Test -> "Test"
 
@@ -57,6 +57,10 @@ let main argv =
     if addParam.IsSome then
         let path = Dir.current
         let dest = Path.join history addParam.Value
+        if Dir.exists dest then
+            printfn "%s exists" dest
+            exit 1
+
         Dir.create dest
         let whiteList = Path.join3 history ".config" "white_list.txt"
 

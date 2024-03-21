@@ -1,4 +1,5 @@
 ﻿namespace Common
+
 open Common.Common
 
 type DateTime = System.DateTime
@@ -8,28 +9,27 @@ module Diff =
     // 相對路徑
     let toFileMap path =
         getFileSystemEntries path
-            |> Array.toSeq
-            |> Seq.map (fun x -> x, Dir.exists x)
-            |> Seq.map (fun (x, b) ->
-                Path.relativePath path x, (b, Path.lastWriteTime x))
-            |> Map.ofSeq
+        |> Array.toSeq
+        |> Seq.map (fun x -> x, Dir.exists x)
+        |> Seq.map (fun (x, b) -> Path.relativePath path x, (b, Path.lastWriteTime x))
+        |> Map.ofSeq
 
     let toFileMapWith pred path =
-        toFileMap path
-        |> Map.filter (fun p (d, t) -> pred p d t)
+        toFileMap path |> Map.filter (fun p (d, t) -> pred p d t)
 
     let currentData pred path =
         // 遍歷目錄
-        let state =
-            path |> toFileMapWith pred
+        let state = path |> toFileMapWith pred
 
         // 最後修改時間
         let result =
-            Map.maxBy (fun (_, (b1, w1)) (_, (b2, w2)) ->
-                match b1, b2 with
-                | _, true -> true
-                | true, false -> false
-                | false, false -> w1 > w2) state
+            Map.maxBy
+                (fun (_, (b1, w1)) (_, (b2, w2)) ->
+                    match b1, b2 with
+                    | _, true -> true
+                    | true, false -> false
+                    | false, false -> w1 > w2)
+                state
 
         let _, (_, t) = result
         state, t
@@ -68,6 +68,7 @@ module Diff =
         stateJson, lastWriteJson
 
     type StateType = Map<string, bool * DateTime>
+
     let read path =
         let stateJson, lastWriteJson = readJson path
         Json.deserialize<StateType> stateJson, Json.deserialize<DateTime> lastWriteJson
@@ -81,10 +82,12 @@ module Diff =
         // 刪除文件
         let deletionJson = File.readAllText <| Path.join package "deletion.json"
         let deletion = Json.deserialize<StateType> deletionJson
+
         deletion
         |> Map.toSeq
         |> Seq.iter (fun (k, (b, _)) ->
             let file = Path.join path k
+
             if b then
                 Dir.deleteIfExists file true
             else
@@ -97,37 +100,39 @@ module Diff =
         // printfn "oldState: %A" oldState
         let creation = Map.sub newState oldState
         let deletion = Map.sub oldState newState
+
         let modification =
-            Map.diffWith (fun f (b1, d1) (b2, d2) ->
-                match b1, b2 with
-                | true, true -> false
-                | false, false -> d1 <> d2
-                |  _ -> true
-                ) newState oldState
+            Map.diffWith
+                (fun f (b1, d1) (b2, d2) ->
+                    match b1, b2 with
+                    | true, true -> false
+                    | false, false -> d1 <> d2
+                    | _ -> true)
+                newState
+                oldState
 
         let joinTarget = Path.join3 target "data"
 
         let dirAction m =
-            Map.iter (fun k _ ->
-                Dir.create <| joinTarget k) m
+            Map.iter (fun k _ -> Dir.create <| joinTarget k) m
 
         let fileAction m =
-            Map.iter (fun k _ ->
-                let dest = joinTarget k
-                Dir.createFor dest
-                File.copy <| Path.join path k <| dest) m
+            Map.iter
+                (fun k _ ->
+                    let dest = joinTarget k
+                    Dir.createFor dest
+                    File.copy <| Path.join path k <| dest)
+                m
 
         // 新增目錄文件要複製
-        let creationDir, creationFile =
-            creation |> Map.partition (fun _ (b, _) -> b)
+        let creationDir, creationFile = creation |> Map.partition (fun _ (b, _) -> b)
         // printfn "creationDir: %A" creationDir
         creationDir |> dirAction
         creationFile |> fileAction
 
         // 修改的部分
         // printfn "modify: %A" modify
-        let modifyDir, modifyFile =
-            modification |> Map.partition (fun _ ((b1, _), _) -> b1)
+        let modifyDir, modifyFile = modification |> Map.partition (fun _ ((b1, _), _) -> b1)
         // printfn "modifyFile: %A" modifyFile
         modifyDir |> dirAction
         modifyFile |> fileAction
@@ -142,48 +147,55 @@ module Diff =
         let m2 = toFileMap path2
         let c1 = Map.sub m1 m2
         let c2 = Map.sub m2 m1
+
         let diffPar =
-            Map.diffWith (fun k (b1, d1) (b2, d2) ->
-                match b1, b2 with
-                | true, true -> false
-                | false, false -> d1 <> d2
-                | _ -> true) m1 m2
+            Map.diffWith
+                (fun k (b1, d1) (b2, d2) ->
+                    match b1, b2 with
+                    | true, true -> false
+                    | false, false -> d1 <> d2
+                    | _ -> true)
+                m1
+                m2
+
         let result = c1.IsEmpty && c2.IsEmpty && diffPar.IsEmpty
+
         if not result then
             printfn "%A" c1
             printfn "%A" c2
             printfn "%A" diffPar
+
         result
 
     let sync path1 path2 =
         let fileList1 = toFileMap path1
         let fileList2 = toFileMap path2
         let u = Map.union fileList1 fileList2
+
         for i in u do
             let key = i.Key
             let value = i.Value
             let p1 = Path.join path1 key
             let p2 = Path.join path2 key
+
             match value with
-            | Some (false, _), Some (false, _) -> // 有新有舊，修改
+            | Some(false, _), Some(false, _) -> // 有新有舊，修改
                 File.copy p1 p2
-            | Some (false, _), Some (true, _) ->
+            | Some(false, _), Some(true, _) ->
                 Dir.deleteIfExists p2 true
                 File.copy p1 p2
-            | Some (true, _), Some (false, _) ->
+            | Some(true, _), Some(false, _) ->
                 File.deleteIfexists p2
                 Dir.create p2
-            | Some (true, _), Some (true, _) ->
-                ()
-            | Some (false, _), None -> // 有新冇舊，新增
+            | Some(true, _), Some(true, _) -> ()
+            | Some(false, _), None -> // 有新冇舊，新增
                 File.copy p1 p2
-            | Some (true, _), None ->
-                Dir.create p2
-            | None, Some (false, _) -> // 冇新有舊，刪除
+            | Some(true, _), None -> Dir.create p2
+            | None, Some(false, _) -> // 冇新有舊，刪除
                 File.deleteIfexists p2
-            | None, Some (true, _) ->
-                Dir.deleteIfExists p2 true
+            | None, Some(true, _) -> Dir.deleteIfExists p2 true
             | _ -> ()
+
         ()
 
     let test =
