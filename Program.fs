@@ -20,6 +20,7 @@ type CliArguments =
     | [<CliPrefix(CliPrefix.None)>] Merge of package: string
     | [<CliPrefix(CliPrefix.None)>] List
     | [<CliPrefix(CliPrefix.None)>] Test
+    | [<CliPrefix(CliPrefix.None)>] Version
     | [<CliPrefix(CliPrefix.None)>] Sync of newPath: string * oldPath: string
     | Path of path: string
 
@@ -34,6 +35,7 @@ type CliArguments =
             | List -> "列出狀態"
             | Sync _ -> "Sync"
             | Test -> "Test"
+            | Version -> "版本號"
 
 [<EntryPoint>]
 let main argv =
@@ -53,6 +55,7 @@ let main argv =
     let listParam = result.TryGetResult List
     let syncParam = result.TryGetResult Sync
     let testParam = result.TryGetResult Test
+    let versionParam = result.TryGetResult Version
 
     if addParam.IsSome then
         let path = Dir.current
@@ -112,6 +115,10 @@ let main argv =
 
     if testParam.IsSome then
         Diff.test
+        exit 0
+
+    if versionParam.IsSome then
+        printfn "version: %s" "0.1.0.240328"
         exit 0
 
     printfn "%s" <| parser.PrintUsage()
