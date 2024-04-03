@@ -99,7 +99,7 @@ let main argv =
     if listParam.IsSome then
         let history = Path.join Dir.current ".history"
         let dirs = Directory.GetDirectories history
-        for i in dirs do
+        for i in dirs |> Array.rev do
             let info = new DirectoryInfo(i)
             let relativePath = Path.relativePath history i
             if relativePath |> Str.startsWith ".diff" |> not then
