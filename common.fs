@@ -28,6 +28,10 @@ module Map =
         |> List.map (fun k -> k, (table1[k], table2[k]))
         |> Map.ofList
 
+    /// <summary>合併表</summary>
+    /// <param name="table1">第一個表</param>
+    /// <param name="table2">第二個表</param>
+    /// <returns>保留所有數據</returns>
     let union table1 table2 =
         let keys1 = table1 |> keysSet
         let keys2 = table2 |> keysSet
@@ -37,6 +41,10 @@ module Map =
             let findK = Map.tryFind k
             k, (findK table1, findK table2))
         |> Map.ofList
+
+    let unionWith f table1 table2 =
+        union table1 table2
+        |> Map.map f
 
     let filterMap f table =
         Map.fold (fun s k v ->
@@ -62,6 +70,10 @@ module Common =
             path,
             "*",
             SearchOption.AllDirectories)
+
+    module DirectoryInfo =
+        let create s =
+            new DirectoryInfo(s)
 
     module Path =
         let join (a: string) b =
@@ -113,7 +125,7 @@ module Common =
         let delete path =
             File.Delete path
 
-        let deleteIfexists path =
+        let deleteIfExists path =
             if exists path then
                 delete path
 

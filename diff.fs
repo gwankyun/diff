@@ -91,7 +91,7 @@ module Diff =
             if b then
                 Dir.deleteIfExists file true
             else
-                File.deleteIfexists file)
+                File.deleteIfExists file)
 
     let diff path target newPath oldPath =
         let newState, _ = read newPath
@@ -105,8 +105,8 @@ module Diff =
             Map.diffWith
                 (fun f (b1, d1) (b2, d2) ->
                     match b1, b2 with
-                    | true, true -> false
-                    | false, false -> d1 <> d2
+                    | true, true -> false // 目錄不比較
+                    | false, false -> d1 <> d2 // 文件比較修改時間
                     | _ -> true)
                 newState
                 oldState
@@ -185,14 +185,14 @@ module Diff =
                 Dir.deleteIfExists p2 true
                 File.copy p1 p2
             | Some(true, _), Some(false, _) ->
-                File.deleteIfexists p2
+                File.deleteIfExists p2
                 Dir.create p2
             | Some(true, _), Some(true, _) -> ()
             | Some(false, _), None -> // 有新冇舊，新增
                 File.copy p1 p2
             | Some(true, _), None -> Dir.create p2
             | None, Some(false, _) -> // 冇新有舊，刪除
-                File.deleteIfexists p2
+                File.deleteIfExists p2
             | None, Some(true, _) -> Dir.deleteIfExists p2 true
             | _ -> ()
 
@@ -210,8 +210,8 @@ module Diff =
             File.writeAllText <| Path.join3 path "5" "6.txt" <| "" // 新增文件
             Dir.create <| Path.join path "3" // 新目錄
             Dir.create <| Path.join3 path "3" "7" // 新目錄
-            File.deleteIfexists <| Path.join path "3.txt" // 刪除文件
-            File.deleteIfexists <| Path.join3 path "5" "51.txt" // 刪除文件
+            File.deleteIfExists <| Path.join path "3.txt" // 刪除文件
+            File.deleteIfExists <| Path.join3 path "5" "51.txt" // 刪除文件
             File.writeAllText <| Path.join path "1.txt" <| "" // 修改文件
             File.writeAllText <| Path.join4 path "5" "52" "521.txt" <| "" // 修改文件
             Dir.deleteIfExists <| Path.join path "4" <| true // 刪除目錄
@@ -246,7 +246,7 @@ module Diff =
         diff currentPath diffPath state2 state1
 
         let zipPath = Path.join <| Dir.parent diffPath <| "patch.zip"
-        File.deleteIfexists zipPath
+        File.deleteIfExists zipPath
         Dir.compress diffPath zipPath
 
         // 原目錄合併差異包
