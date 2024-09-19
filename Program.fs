@@ -2,6 +2,7 @@
 open System.Text.Json
 open System.Text.Json.Serialization
 open Common
+open FSLogger
 
 module C = Common
 
@@ -40,6 +41,10 @@ type CliArguments =
 [<EntryPoint>]
 let main argv =
     printfn "argv: %A" argv
+
+    Common.logger <- Logger.ColorConsole
+
+    logger.I $"argv: {argv}"
 
     let parser = ArgumentParser.Create<CliArguments>(programName = "dir-diff.exe")
 
@@ -93,6 +98,7 @@ let main argv =
 
     if mergeParam.IsSome then
         let path = Dir.current
+        logger.I $"path: {path}"
         Diff.merge path mergeParam.Value
         exit 0
 
@@ -116,6 +122,7 @@ let main argv =
         exit 0
 
     if testParam.IsSome then
+        failwith "test"
         Diff.test
         exit 0
 

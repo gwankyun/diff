@@ -78,6 +78,8 @@ module Diff =
         Json.deserialize<StateType list> stateJson, Json.deserialize<DateTime list> lastWriteJson
 
     let merge path package =
+        logger.I $"path: {path}"
+        logger.I $"package: {package}"
         Dir.copy <| Path.join package "data" <| path
         // 刪除文件
         let deletionJson = File.readAllText <| Path.join package "deletion.json"
@@ -200,56 +202,59 @@ module Diff =
 
     let test =
         printfn "What?"
+        // failwith "impact"
+        // return
+        
         // let a = Map.ofList [(1, 2); (2, 3); (3, 4)]
         // let b = Map.ofList [(1, 2); (2, 3); (3, 5)]
         // let i = Map.diffWith (fun k v1 v2 -> v1 <> v2) a b
         // printfn "i: %A" i
 
-        let modify path =
-            File.writeAllText <| Path.join path "2.txt" <| "" // 新增文件
-            File.writeAllText <| Path.join3 path "5" "6.txt" <| "" // 新增文件
-            Dir.create <| Path.join path "3" // 新目錄
-            Dir.create <| Path.join3 path "3" "7" // 新目錄
-            File.deleteIfExists <| Path.join path "3.txt" // 刪除文件
-            File.deleteIfExists <| Path.join3 path "5" "51.txt" // 刪除文件
-            File.writeAllText <| Path.join path "1.txt" <| "" // 修改文件
-            File.writeAllText <| Path.join4 path "5" "52" "521.txt" <| "" // 修改文件
-            Dir.deleteIfExists <| Path.join path "4" <| true // 刪除目錄
+        // let modify path =
+        //     File.writeAllText <| Path.join path "2.txt" <| "" // 新增文件
+        //     File.writeAllText <| Path.join3 path "5" "6.txt" <| "" // 新增文件
+        //     Dir.create <| Path.join path "3" // 新目錄
+        //     Dir.create <| Path.join3 path "3" "7" // 新目錄
+        //     File.deleteIfExists <| Path.join path "3.txt" // 刪除文件
+        //     File.deleteIfExists <| Path.join3 path "5" "51.txt" // 刪除文件
+        //     File.writeAllText <| Path.join path "1.txt" <| "" // 修改文件
+        //     File.writeAllText <| Path.join4 path "5" "52" "521.txt" <| "" // 修改文件
+        //     Dir.deleteIfExists <| Path.join path "4" <| true // 刪除目錄
 
-        let clearDirectory dir =
-            Dir.deleteIfExists dir true
-            Dir.create dir
-        // 複製一個文件夾
-        printfn "%A" Dir.current
-        let currentDir = Dir.current
-        let test = Path.join currentDir "test"
-        let joinTest = Path.join test
-        let currentPath = joinTest "current"
-        let dataPath = joinTest "data"
-        clearDirectory dataPath
-        Dir.copy <| joinTest "base" <| dataPath
-        clearDirectory currentPath
-        Dir.copy dataPath currentPath
-        // 記錄狀態A
-        let state1 = joinTest "state1"
-        clearDirectory state1
-        current defaultPred currentPath state1
-        // 進行一些操作
-        modify currentPath
-        // 記錄狀態B
-        let state2 = joinTest "state2"
-        clearDirectory state2
-        current defaultPred currentPath state2
-        // 從AB生成差異包
-        let diffPath = joinTest "diff"
-        clearDirectory diffPath
-        diff currentPath diffPath state2 state1
+        // let clearDirectory dir =
+        //     Dir.deleteIfExists dir true
+        //     Dir.create dir
+        // // 複製一個文件夾
+        // printfn "%A" Dir.current
+        // let currentDir = Dir.current
+        // let test = Path.join currentDir "test"
+        // let joinTest = Path.join test
+        // let currentPath = joinTest "current"
+        // let dataPath = joinTest "data"
+        // clearDirectory dataPath
+        // Dir.copy <| joinTest "base" <| dataPath
+        // clearDirectory currentPath
+        // Dir.copy dataPath currentPath
+        // // 記錄狀態A
+        // let state1 = joinTest "state1"
+        // clearDirectory state1
+        // current defaultPred currentPath state1
+        // // 進行一些操作
+        // modify currentPath
+        // // 記錄狀態B
+        // let state2 = joinTest "state2"
+        // clearDirectory state2
+        // current defaultPred currentPath state2
+        // // 從AB生成差異包
+        // let diffPath = joinTest "diff"
+        // clearDirectory diffPath
+        // diff currentPath diffPath state2 state1
 
-        let zipPath = Path.join <| Dir.parent diffPath <| "patch.zip"
-        File.deleteIfExists zipPath
-        Dir.compress diffPath zipPath
+        // let zipPath = Path.join <| Dir.parent diffPath <| "patch.zip"
+        // File.deleteIfExists zipPath
+        // Dir.compress diffPath zipPath
 
-        // 原目錄合併差異包
-        merge dataPath diffPath
-        // 對比兩個目錄
-        printfn "compare: %A" <| compare dataPath currentPath
+        // // 原目錄合併差異包
+        // merge dataPath diffPath
+        // // 對比兩個目錄
+        // printfn "compare: %A" <| compare dataPath currentPath

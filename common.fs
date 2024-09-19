@@ -2,6 +2,7 @@
 open System.IO
 open System.Text.Json
 open System.IO.Compression
+open FSLogger
 
 module Map =
     let maxBy f table =
@@ -65,6 +66,8 @@ module Map =
             | _ -> None)
 
 module Common =
+    // let logger = Logger.ColorConsole
+    let mutable logger = Logger.ColorConsole
     let getFileSystemEntries path =
         Directory.GetFileSystemEntries(
             path,
@@ -162,6 +165,10 @@ module Common =
             Directory.CreateDirectory path |> ignore
 
         let copy src dest =
+            // printfn "yes"
+            let logger = logger |> Logger.appendPath "copy"
+            logger.I $"src {src}"
+            logger.I $"dest {src}"
             let data = getFileSystemEntries src
             let sorted =
                 data
