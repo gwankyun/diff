@@ -138,7 +138,7 @@ module Common =
             File.Copy(src, dest, true)
 
         /// <summary>寫入文件</summary>
-        let writeAllText path contents =
+        let writeAllText path (contents: string) =
             File.WriteAllText(path, contents)
 
         let readAllText path =
