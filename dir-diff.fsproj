@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="FSLogger" Version="6.0.0" />
-    <PackageReference Include="Argu" Version="6.2.4" />
+    <PackageReference Include="Argu" Version="6.2.5" />
   </ItemGroup>
 
 </Project>
